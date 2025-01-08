@@ -17,6 +17,20 @@
     rule: allow
     name: 'Nginx Full'
 
+- name: Collect configs in /etc/nginx/conf.d
+  ansible.builtin.find:
+    paths: /etc/nginx/conf.d/
+    hidden: true
+    recurse: true
+    file_type: any
+  register: collected_files
+
+- name: Remove collected configs
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ collected_files.files }}"
+
 - name: Configure gitlab nginx
   ansible.builtin.template:
     src: "gitlabNginx.j2"

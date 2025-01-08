@@ -3,7 +3,7 @@ registry_external_url 'https://registry.{{ gitlab_domain }}'
 
 gitlab_rails['trusted_proxies'] = [ '192.168.1.0/24', '192.168.2.1', '2001:0db8::/32' ]
 
-registry['token_realm'] = 'https://registry.{{ gitlab_domain }}'
+registry['token_realm'] = 'https://{{ gitlab_domain }}'
 gitlab_rails['registry_enabled'] = true
 registry['enable'] = true
 registry['registry_http_addr'] = "localhost:5678"

@@ -1,0 +1,10 @@
+---
+
+- name: Change base gitlab config
+  ansible.builtin.include_tasks: common/setBaseGitlabConfig.yaml
+
+- name: Generate certificates
+  ansible.builtin.include_tasks: common/generateCertificates.yaml
+
+- name: Gitlab reconfigure
+  ansible.builtin.include_tasks: common/gitlabReconfigure.yaml

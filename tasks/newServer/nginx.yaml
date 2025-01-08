@@ -1,0 +1,37 @@
+---
+
+- name: Update repositories cache and install "nginx" package
+  ansible.builtin.apt:
+    name: nginx
+    update_cache: true
+    state: present
+
+- name: Start nginx
+  ansible.builtin.systemd_service:
+    state: started
+    name: nginx
+    enabled: true
+
+- name: Ufw allow 'Nginx Full'
+  community.general.ufw:
+    rule: allow
+    name: 'Nginx Full'
+
+- name: Configure gitlab nginx
+  ansible.builtin.template:
+    src: "gitlabNginx.j2"
+    dest: "/etc/nginx/conf.d/{{ gitlab_domain }}.conf"
+    mode: "0644"
+
+- name: Configure registry nginx
+  ansible.builtin.template:
+    src: "registryNginx.j2"
+    dest: "/etc/nginx/conf.d/registry.{{ gitlab_domain }}.conf"
+    mode: "0644"
+
+- name: Check nginx config
+  ansible.builtin.command: nginx -t
+  register: result
+  failed_when: result.rc != 0
+  changed_when: true
+  notify: Restart nginx

@@ -1,0 +1,7 @@
+---
+
+- name: Change base gitlab config
+  ansible.builtin.template:
+    src: gitlab.rb.j2
+    dest: "/etc/gitlab/gitlab.rb"
+    mode: "0600"

@@ -1,0 +1,70 @@
+---
+
+- name: Check oldServer server info
+  ansible.builtin.fail:
+    msg: You should set oldServer server in 'servers' group
+  when: "'oldServer' is not in groups['servers']"
+
+- name: Check newServer server info
+  ansible.builtin.fail:
+    msg: You should set newServer server in 'servers' group
+  when: "'newServer' is not in groups['servers']"
+
+- name: Check 'gitlab_domain' variable
+  ansible.builtin.fail:
+    msg: |
+      "You should set correct value of 'gitlab_domain' variable"
+      "Current value is '{{ gitlab_domain }}'"
+  when: gitlab_domain|length == 0
+
+- name: Check 'ssh_port' variable
+  ansible.builtin.fail:
+    msg: |
+      "You should set correct value of 'ssh_port' variable"
+      "Current value is '{{ ssh_port }}'"
+  when: ssh_port < 4000 or ssh_port >= 5000
+
+- name: Check 'admin_email' variable
+  ansible.builtin.fail:
+    msg: |
+      "You should set correct value of 'admin_email' variable"
+      "Current value is '{{ admin_email }}'"
+  when: admin_email|length == 0
+
+- name: Check 'gitlab_version' variable
+  ansible.builtin.fail:
+    msg: |
+      "You should set correct value of 'gitlab_version' variable"
+      "Current value is '{{ gitlab_version }}'"
+  when: gitlab_version|length == 0
+
+- name: Check 'path_to_gitlab_install_file' variable
+  ansible.builtin.fail:
+    msg: |
+      "You should set correct value of 'path_to_gitlab_install_file' variable"
+      "Current value is '{{ path_to_gitlab_install_file }}'"
+  when: path_to_gitlab_install_file|length == 0
+
+- name: Check gitlab version on the old server
+  when: inventory_hostname == 'oldServer'
+  block:
+    - name: Get gitlab version from old server
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep gitlab-ee /opt/gitlab/version-manifest.txt | sed -E 's/\s/\_/'
+      args:
+        executable: /bin/bash
+      register: old_server_gitlab_version
+      changed_when: true
+
+    - name: Compare 'old_server_gitlab_version' with 'gitlab_version'
+      ansible.builtin.fail:
+        msg: |
+          "Gitlab version on the old server: {{ old_server_gitlab_version['stdout_lines'][0] }}"
+          "Current gitlab version: {{ gitlab_version }}"
+      when: old_server_gitlab_version['stdout_lines'][0] != gitlab_version
+
+- name: Check gitlab version on the new server
+  when: inventory_hostname == 'newServer'
+  ansible.builtin.stat:
+    path: "{{ path_to_gitlab_install_file }}/{{ gitlab_version }}-ee.0_amd64.deb"

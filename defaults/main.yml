@@ -1,0 +1,8 @@
+---
+# defaults file for ansible-gitlab-migration
+
+gitlab_version: undefined # example: gitlab-ee_16.11.2
+path_to_gitlab_install_file: undefined
+gitlab_domain: undefined
+admin_email: undefined
+ssh_port: 0

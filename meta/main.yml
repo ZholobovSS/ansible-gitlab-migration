@@ -1,0 +1,10 @@
+galaxy_info:
+  author: Zholobov Semyon Sergeevich
+  description: Role for migration gitlab server
+  company: ZH2S
+  license: MIT
+  min_ansible_version: "2.1"
+
+  galaxy_tags: []
+
+dependencies: []

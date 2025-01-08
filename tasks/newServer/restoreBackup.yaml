@@ -1,0 +1,99 @@
+---
+
+- name: Register backup name
+  ansible.builtin.set_fact:
+    backup_name: "{{ hostvars['oldServer']['backup_name']['stdout_lines'][0] }}"
+
+- name: Stop Redis
+  ansible.builtin.command: gitlab-ctl stop redis
+  changed_when: true
+
+- name: Transfer redis backup from the old server to the new server
+  ansible.posix.synchronize:
+    src: /var/opt/gitlab/redis/dump.rdb
+    dest: /var/opt/gitlab/redis/
+  delegate_to: oldServer
+
+- name: Transfer backup from the old server to the new server
+  ansible.posix.synchronize:
+    src: "/var/opt/gitlab/backups/{{ backup_name }}"
+    dest: /var/opt/gitlab/backups/
+  delegate_to: oldServer
+
+- name: Restore appropriate file system permissions
+  block:
+    - name: '/var/opt/gitlab/redis'
+      ansible.builtin.file:
+        path: /var/opt/gitlab/redis
+        owner: gitlab-redis
+
+    - name: '/var/opt/gitlab/redis/dump.rdb'
+      ansible.builtin.file:
+        path: /var/opt/gitlab/redis/dump.rdb
+        owner: gitlab-redis
+        group: gitlab-redis
+
+    - name: '/var/opt/gitlab/backups'
+      ansible.builtin.file:
+        path: /var/opt/gitlab/backups
+        owner: git
+        group: root
+
+    - name: "/var/opt/gitlab/backups/{{ backup_name }}"
+      ansible.builtin.file:
+        path: "/var/opt/gitlab/backups/{{ backup_name }}"
+        owner: git
+        group: git
+
+- name: Start redis
+  ansible.builtin.command: gitlab-ctl start redis
+  changed_when: true
+
+- name: Gitlab reconfigure
+  ansible.builtin.include_tasks: common/gitlabReconfigure.yaml
+
+- name: Start GitLab
+  ansible.builtin.command: gitlab-ctl start
+  changed_when: true
+
+- name: Stop GitLab puma
+  ansible.builtin.command: gitlab-ctl stop puma
+  changed_when: true
+
+- name: Stop GitLab sidekiq
+  ansible.builtin.command: gitlab-ctl stop sidekiq
+  changed_when: true
+
+- name: Show GitLab status
+  ansible.builtin.include_tasks: common/showGitlabStatus.yaml
+
+- name: Restore backup
+  ansible.builtin.expect:
+    command: "gitlab-backup restore BACKUP={{ backup_name | replace('_gitlab_backup.tar', '') }}"
+    echo: true
+    responses:
+      "Do you want to continue": "yes"
+      "Do you want to continue": "yes"
+    timeout: 300
+
+- name: Restart GitLab
+  ansible.builtin.command: gitlab-ctl restart
+  changed_when: true
+
+- name: Check GitLab
+  ansible.builtin.shell: |
+    set -o pipefail
+    gitlab-rake gitlab:check SANITIZE=true
+    gitlab-rake gitlab:doctor:secrets
+    gitlab-rake gitlab:artifacts:check
+    gitlab-rake gitlab:lfs:check
+    gitlab-rake gitlab:uploads:check
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Unblock new CI/CD jobs
+  ansible.builtin.include_tasks: common/unBlockCICD.yaml
+
+- name: Gitlab reconfigure
+  ansible.builtin.include_tasks: common/gitlabReconfigure.yaml

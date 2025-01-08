@@ -1,0 +1,5 @@
+---
+
+- name: Create configuration backup on the old server
+  ansible.builtin.command: gitlab-ctl backup-etc
+  changed_when: true

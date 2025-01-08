@@ -1,0 +1,58 @@
+---
+
+- name: Block new CI/CD jobs
+  ansible.builtin.include_tasks: common/blockCICD.yaml
+
+- name: Gitlab reconfigure
+  ansible.builtin.include_tasks: common/gitlabReconfigure.yaml
+
+- name: Flush the Redis database to disk
+  ansible.builtin.shell: |
+    /opt/gitlab/embedded/bin/redis-cli -s /var/opt/gitlab/redis/redis.socket save
+    gitlab-ctl stop
+    gitlab-ctl start postgresql
+    sudo gitlab-ctl start gitaly
+  changed_when: true
+
+- name: Create a GitLab backup
+  ansible.builtin.command: gitlab-backup create
+  changed_when: true
+
+- name: Get backup name
+  ansible.builtin.shell: |
+    set -o pipefail
+    ls -t /var/opt/gitlab/backups/ | head -n1
+  args:
+    executable: /bin/bash
+  register: backup_name
+  changed_when: backup_name.rc != 0
+
+- name: Disable GitLab services
+  ansible.builtin.blockinfile:
+    path: "/etc/gitlab/gitlab.rb"
+    append_newline: true
+    prepend_newline: true
+    block: |
+      alertmanager['enable'] = false
+      gitlab_exporter['enable'] = false
+      gitlab_pages['enable'] = false
+      gitlab_workhorse['enable'] = false
+      grafana['enable'] = false
+      logrotate['enable'] = false
+      gitlab_rails['incoming_email_enabled'] = false
+      nginx['enable'] = false
+      node_exporter['enable'] = false
+      postgres_exporter['enable'] = false
+      postgresql['enable'] = false
+      prometheus['enable'] = false
+      puma['enable'] = false
+      redis['enable'] = false
+      redis_exporter['enable'] = false
+      registry['enable'] = false
+      sidekiq['enable'] = false
+
+- name: Gitlab reconfigure
+  ansible.builtin.include_tasks: common/gitlabReconfigure.yaml
+
+- name: Show GitLab status
+  ansible.builtin.include_tasks: common/showGitlabStatus.yaml

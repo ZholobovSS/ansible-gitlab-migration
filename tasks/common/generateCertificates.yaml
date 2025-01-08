@@ -1,0 +1,19 @@
+---
+
+- name: "Generate Let's encrypt certificates for gitlab"
+  ansible.builtin.expect:
+    command: sudo certbot --nginx -d {{ gitlab_domain }}
+    echo: true
+    responses:
+      "Enter email address": "{{ admin_email }}"
+      "Would you be willing": "Y"
+      "Select the appropriate number": "1"
+
+- name: "Generate Let's encrypt certificates for registry"
+  ansible.builtin.expect:
+    command: sudo certbot --nginx -d registry.{{ gitlab_domain }}
+    echo: true
+    responses:
+      "Enter email address": "{{ admin_email }}"
+      "Would you be willing": "Y"
+      "Select the appropriate number": "1"

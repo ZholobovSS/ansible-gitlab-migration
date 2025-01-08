@@ -1,0 +1,6 @@
+---
+
+- name: Block new CI/CD jobs
+  ansible.builtin.lineinfile:
+    path: "/etc/gitlab/gitlab.rb"
+    line: nginx['custom_gitlab_server_config'] = "location = /api/v4/jobs/request {\n    deny all;\n    return 503;\n  }\n"

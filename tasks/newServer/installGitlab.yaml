@@ -1,0 +1,17 @@
+---
+- name: Install gitlab
+  ansible.builtin.command: dpkg -i {{ path_to_gitlab_install_file }}/{{ gitlab_version }}-ee.0_amd64.deb
+  changed_when: true
+
+- name: Change base gitlab config
+  ansible.builtin.include_tasks: common/setBaseGitlabConfig.yaml
+
+- name: Add the user 'gitlab-www' to the group 'www-data'
+  ansible.builtin.user:
+    name: gitlab-www
+    groups: www-data
+    append: true
+  notify: Restart nginx
+
+- name: Gitlab reconfigure
+  ansible.builtin.include_tasks: common/gitlabReconfigure.yaml

@@ -1,0 +1,11 @@
+---
+
+- name: GitLab status
+  ansible.builtin.command: gitlab-ctl status
+  register: gitlab_status
+  changed_when: true
+  ignore_errors: true
+
+- name: Show GitLab status
+  ansible.builtin.debug:
+    var: gitlab_status.stdout
